@@ -5,15 +5,12 @@ import json
 import requests
 import magic
 
-from utilities import get_download_url
+from utilities import get_download_url, load_notes
 
 
-github_url = "https://raw.githubusercontent.com/aptnotes/data/master/APTnotes.json"
-APTnotes = requests.get(github_url)
-
-if APTnotes.status_code == 200:
+if __name__ == '__main__':
     # Load APT report metadata into JSON container
-    APT_reports = json.loads(APTnotes.text)
+    APT_reports = load_notes()
 
     # Process each report based on obtained metadata
     for report in APT_reports:

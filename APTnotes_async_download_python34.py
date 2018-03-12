@@ -8,7 +8,7 @@ import aiohttp
 import requests
 import magic
 
-from utilities import get_download_url
+from utilities import get_download_url, load_notes
 
 
 @asyncio.coroutine
@@ -112,19 +112,11 @@ def download_all_reports(loop, APT_reports):
 
 if __name__ == '__main__':
     # Retrieve APT Note Data
-    github_url = "https://raw.githubusercontent.com/aptnotes/data/master/APTnotes.json"
-    APTnotes = requests.get(github_url)
+    APT_reports = load_notes()
 
-    if APTnotes.status_code == 200:
-        # Load APT report metadata into JSON container
-        APT_reports = json.loads(APTnotes.text)
+    # Set semaphore for rate limiting
+    sem = asyncio.Semaphore(10)
 
-        # Reverse order of reports in order to download newest to oldest
-        APT_reports.reverse()
-
-        # Set semaphore for rate limiting
-        sem = asyncio.Semaphore(10)
-
-        # Create async loop
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(download_all_reports(loop, APT_reports))
+    # Create async loop
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(download_all_reports(loop, APT_reports))
