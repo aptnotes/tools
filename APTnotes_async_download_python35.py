@@ -8,7 +8,7 @@ import aiohttp
 import requests
 import magic
 
-from bs4 import BeautifulSoup
+from utilities import get_download_url
 
 
 async def download_report(session, report):
@@ -41,16 +41,7 @@ async def download_report(session, report):
             async with session.get(report_link) as splash_response:
                 splash_page = await splash_response.content.read()
 
-            # Parse preview page for desired elements to build download URL
-            soup = BeautifulSoup(splash_page, 'lxml')
-            scripts = soup.find('body').find_all('script')
-            sections = scripts[-1].contents[0].split(';')
-            app_api = json.loads(sections[0].split('=')[1])['/app-api/enduserapp/shared-item']
-            
-            # Build download URL
-            box_url = "https://app.box.com/index.php"
-            box_args = "?rm=box_download_shared_file&shared_name={}&file_id={}"
-            file_url = box_url + box_args.format(app_api['sharedName'], 'f_{}'.format(app_api['itemID']))
+            file_url = get_download_url(splash_page)
 
             # Use semaphore to limit download rate
             async with sem:

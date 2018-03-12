@@ -4,7 +4,9 @@ import hashlib
 import json
 import requests
 import magic
-from bs4 import BeautifulSoup
+
+from utilities import get_download_url
+
 
 github_url = "https://raw.githubusercontent.com/aptnotes/data/master/APTnotes.json"
 APTnotes = requests.get(github_url)
@@ -25,18 +27,8 @@ if APTnotes.status_code == 200:
 
         try:
             # Download Box Splash/Preview page for file
-            report_splash = requests.get(report_link)
-
-            # Parse preview page for desired elements to build download URL
-            soup = BeautifulSoup(report_splash.text, 'lxml')
-            scripts = soup.find('body').find_all('script')
-            sections = scripts[-1].contents[0].split(';')
-            app_api = json.loads(sections[0].split('=')[1])['/app-api/enduserapp/shared-item']
-            
-            # Build download URL
-            box_url = "https://app.box.com/index.php"
-            box_args = "?rm=box_download_shared_file&shared_name={}&file_id={}"
-            file_url = box_url + box_args.format(app_api['sharedName'], 'f_{}'.format(app_api['itemID']))
+            report_splash = requests.get(report_link).text
+            file_url = get_download_url(report_splash)
 
             # Ensure directory exists
             os.makedirs(report_year, exist_ok=True)
