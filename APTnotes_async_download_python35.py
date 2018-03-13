@@ -5,9 +5,8 @@ import json
 import os
 
 import aiohttp
-import magic
 
-from utilities import get_download_url, load_notes
+from utilities import get_download_url, load_notes, report_already_downloaded, verify_report_filetype
 
 
 async def download_report(session, report):
@@ -28,10 +27,7 @@ async def download_report(session, report):
     # Set download path
     download_path = os.path.join(report_year, report_filename)
 
-    # File with PDF extension path
-    pdf_extension_path = download_path + ".pdf"
-
-    if os.path.exists(download_path) or os.path.exists(pdf_extension_path):
+    if report_already_downloaded(download_path):
         print("[!] File {} already exists".format(report_filename))
     else:
 
@@ -60,13 +56,9 @@ async def download_report(session, report):
                 os.remove(download_path)
                 raise ValueError("File integrity check failed")
 
-            # Identify filetype and add extension if PDF
-            file_type = magic.from_file(download_path, mime=True)
-
-            if file_type == "application/pdf":
-                os.rename(download_path, pdf_extension_path)
-
-            print("[+] Successfully downloaded {}".format(report_filename))
+            # Verify report filetype and add extension
+            download_path = verify_report_filetype(download_path)
+            print("[+] Successfully downloaded {}".format(download_path))
 
         except Exception as unexpected_error:
             message = "[!] Download failure for {}".format(report['Filename'])

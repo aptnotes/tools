@@ -3,9 +3,8 @@ import os
 import hashlib
 import json
 import requests
-import magic
 
-from utilities import get_download_url, load_notes
+from utilities import get_download_url, load_notes, report_already_downloaded, verify_report_filetype
 
 
 if __name__ == '__main__':
@@ -36,10 +35,7 @@ if __name__ == '__main__':
             # Set download path
             download_path = os.path.join(report_year, report_filename)
 
-            # File with PDF extension path
-            pdf_extension_path = download_path + ".pdf"
-
-            if os.path.exists(download_path) or os.path.exists(pdf_extension_path):
+            if report_already_downloaded(download_path):
                 print("[+] File {} already exists".format(report_filename))
                 continue
             else:
@@ -64,11 +60,6 @@ if __name__ == '__main__':
             print(message, unexpected_error)
 
         else:
-            # Identify filetype and add extension if PDF
-            file_type = magic.from_file(download_path, mime=True)
-
-            if file_type == "application/pdf":
-                os.rename(download_path, pdf_extension_path)
-
-            message = "[+] Successfully downloaded {}".format(report_filename)
-            print(message)
+            # Verify report filetype and add extension
+            download_path = verify_report_filetype(download_path)
+            print("[+] Successfully downloaded {}".format(download_path))
