@@ -5,7 +5,6 @@ import json
 import os
 
 import aiohttp
-import requests
 import magic
 
 from utilities import get_download_url, load_notes
