@@ -1,11 +1,17 @@
+import glob
 import json
+import os
+import magic
 import requests
 
 from bs4 import BeautifulSoup
 
 
 def get_download_url(page):
-    # Parse preview page for desired elements to build download URL
+    """
+    Parse preview page for desired elements to build download URL
+
+    """
     soup = BeautifulSoup(page, 'lxml')
     scripts = soup.find('body').find_all('script')
     sections = scripts[-1].contents[0].split(';')
@@ -20,7 +26,10 @@ def get_download_url(page):
 
 
 def load_notes():
-    # Retrieve APT Note Data
+    """
+    Retrieve APT Note Data
+
+    """
     github_url = "https://raw.githubusercontent.com/aptnotes/data/master/APTnotes.json"
     APTnotes = requests.get(github_url)
 
@@ -34,3 +43,37 @@ def load_notes():
     APT_reports.reverse()
 
     return APT_reports
+
+
+supported_filetypes = { "application/pdf": ".pdf",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx" }
+
+def verify_report_filetype(download_path):
+    """
+    Identify filetype and add extension
+
+    """
+    file_type = magic.from_file(download_path, mime=True)
+
+    # Add supported extension to path
+    if file_type in supported_filetypes and not download_path.endswith(supported_filetypes[file_type]):
+        extension_path = download_path + supported_filetypes[file_type]
+
+    # Leave as original download path
+    else:
+        extension_path = download_path
+
+    os.rename(download_path, extension_path)
+    download_path = extension_path
+
+    return download_path
+
+
+def report_already_downloaded(download_path):
+    """
+    Check if report is already downloaded
+
+    """
+    if glob.glob(download_path) or glob.glob("{}.*".format(download_path)):
+        return True
+    return False
