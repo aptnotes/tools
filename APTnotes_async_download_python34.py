@@ -3,10 +3,20 @@ import asyncio
 import hashlib
 import json
 import os
-
+import sys
 import aiohttp
 
 from utilities import get_download_url, load_notes, report_already_downloaded, verify_report_filetype
+
+
+if sys.version_info.major < 3:
+    raise Exception("Must be using Python 3.4")
+
+if sys.version_info.minor < 4:
+    raise Exception("Must be using Python 3.4")
+    
+if sys.version_info.minor > 4:
+    raise Exception("Must be using Python 3.4")
 
 
 @asyncio.coroutine

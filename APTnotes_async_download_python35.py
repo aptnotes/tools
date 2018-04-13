@@ -3,10 +3,17 @@ import asyncio
 import hashlib
 import json
 import os
-
+import sys
 import aiohttp
 
 from utilities import get_download_url, load_notes, report_already_downloaded, verify_report_filetype
+
+
+if sys.version_info.major < 3:
+    raise Exception("Must be using Python 3.5 or higher")
+
+if sys.version_info.minor < 5:
+    raise Exception("Must be using Python 3.5 or higher")
 
 
 async def download_report(session, report):
