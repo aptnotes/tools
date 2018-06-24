@@ -3,12 +3,17 @@ import asyncio
 import hashlib
 import json
 import os
-
+import sys
 import aiohttp
-import requests
-import magic
 
-from bs4 import BeautifulSoup
+from utilities import get_download_url, load_notes, report_already_downloaded, verify_report_filetype
+
+
+if sys.version_info.major < 3:
+    raise Exception("Must be using Python 3.5 or higher")
+
+if sys.version_info.minor < 5:
+    raise Exception("Must be using Python 3.5 or higher")
 
 
 async def download_report(session, report):
@@ -29,10 +34,7 @@ async def download_report(session, report):
     # Set download path
     download_path = os.path.join(report_year, report_filename)
 
-    # File with PDF extension path
-    pdf_extension_path = download_path + ".pdf"
-
-    if os.path.exists(download_path) or os.path.exists(pdf_extension_path):
+    if report_already_downloaded(download_path):
         print("[!] File {} already exists".format(report_filename))
     else:
 
@@ -41,15 +43,7 @@ async def download_report(session, report):
             async with session.get(report_link) as splash_response:
                 splash_page = await splash_response.content.read()
 
-            # Parse preview page for desired elements to build download URL
-            soup = BeautifulSoup(splash_page, 'lxml')
-            sections = soup.find('body').find('script').contents[0].split(';')
-            app_api = json.loads(sections[1].split('=')[1])['/app-api/enduserapp/shared-item']
-            
-            # Build download URL
-            box_url = "https://app.box.com/index.php"
-            box_args = "?rm=box_download_shared_file&shared_name={}&file_id={}"
-            file_url = box_url + box_args.format(app_api['sharedName'], 'f_{}'.format(app_api['itemID']))
+            file_url = get_download_url(splash_page)
 
             # Use semaphore to limit download rate
             async with sem:
@@ -69,13 +63,9 @@ async def download_report(session, report):
                 os.remove(download_path)
                 raise ValueError("File integrity check failed")
 
-            # Identify filetype and add extension if PDF
-            file_type = magic.from_file(download_path, mime=True)
-
-            if file_type == "application/pdf":
-                os.rename(download_path, pdf_extension_path)
-
-            print("[+] Successfully downloaded {}".format(report_filename))
+            # Verify report filetype and add extension
+            download_path = verify_report_filetype(download_path)
+            print("[+] Successfully downloaded {}".format(download_path))
 
         except Exception as unexpected_error:
             message = "[!] Download failure for {}".format(report['Filename'])
@@ -90,19 +80,11 @@ async def download_all_reports(loop, APT_reports):
 
 if __name__ == '__main__':
     # Retrieve APT Note Data
-    github_url = "https://raw.githubusercontent.com/aptnotes/data/master/APTnotes.json"
-    APTnotes = requests.get(github_url)
+    APT_reports = load_notes()
 
-    if APTnotes.status_code == 200:
-        # Load APT report metadata into JSON container
-        APT_reports = json.loads(APTnotes.text)
+    # Set semaphore for rate limiting
+    sem = asyncio.Semaphore(10)
 
-        # Reverse order of reports in order to download newest to oldest
-        APT_reports.reverse()
-
-        # Set semaphore for rate limiting
-        sem = asyncio.Semaphore(10)
-
-        # Create async loop
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(download_all_reports(loop, APT_reports))
+    # Create async loop
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(download_all_reports(loop, APT_reports))
