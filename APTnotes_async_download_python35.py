@@ -83,7 +83,7 @@ async def download_report(session, report):
 
 
 async def download_all_reports(loop, APT_reports):
-    with aiohttp.ClientSession(loop=loop) as session:
+    async with aiohttp.ClientSession(loop=loop) as session:
         download_queue = [loop.create_task(download_report(session, report)) for report in APT_reports]
         await asyncio.wait(download_queue)
 
