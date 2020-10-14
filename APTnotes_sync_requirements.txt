@@ -1,4 +1,4 @@
-beautifulsoup4==4.5.1
-lxml==3.6.4
-python-magic==0.4.12
-requests==2.11.1
+beautifulsoup4==4.9.3
+lxml==4.5.2
+python-magic==0.4.18
+requests==2.24.0
